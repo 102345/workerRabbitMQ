@@ -1,0 +1,11 @@
+{   
+    "database": {
+      "url": "://postgres:scnfm@localhost:5432/devtodb"
+    },
+    "server": {
+      "port": "3000"
+    },
+    "rabbitMQ" :{
+      "connectionAMQP":"amqp://admin:quark@localhost:5672"
+    }
+}
