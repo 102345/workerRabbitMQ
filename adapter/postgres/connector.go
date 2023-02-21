@@ -52,8 +52,9 @@ func GetConnection(context context.Context) *pgxpool.Pool {
 // RunMigrations run scripts on path database/migrations
 func RunMigrations() {
 	databaseURL := viper.GetString("database.url")
-	m, err := migrate.New("file://database/migrations", "pgx"+databaseURL)
+	m, err := migrate.New("file:..//database/migrations", "pgx"+databaseURL)
 	if err != nil {
+		log.Println("Enter this error path file")
 		log.Println(err)
 	}
 

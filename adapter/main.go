@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/marc/workerRabbitMQ-example/adapter/postgres"
+	"github.com/marc/workerRabbitMQ-example/application"
 	"github.com/spf13/viper"
 )
 
@@ -20,5 +21,6 @@ func main() {
 	ctx := context.Background()
 	conn := postgres.GetConnection(ctx)
 	defer conn.Close()
+	application.ProcessQueueStockProductApp()
 
 }
