@@ -8,6 +8,7 @@ import (
 
 func ProcessQueueStockProductApp(queueRabbitProcessUseCase domain.IQueueProcessUseCase, stockProductUseCase domain.IStockProductUseCase) {
 
+	//productid:quantitity:balance:signalbalance
 	messageTest := "000000002:000000001:000000001:N"
 
 	registerQueueStockProduct(messageTest, queueRabbitProcessUseCase, stockProductUseCase)
