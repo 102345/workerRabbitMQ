@@ -14,7 +14,7 @@ type QueueProcess struct {
 }
 
 type IQueueProcessUseCase interface {
-	Create(message string) (*QueueProcess, error)
+	Create(queue *dto.QueueProcessDTO) (*QueueProcess, error)
 }
 
 type IQueueProcessRepository interface {

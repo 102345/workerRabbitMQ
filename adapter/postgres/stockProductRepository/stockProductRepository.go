@@ -31,6 +31,7 @@ func (repository repository) Create(stockProduct *dto.StockProductDTO) (*domain.
 		stockProduct.Balance,
 	).Scan(
 		&stockProductRet.ID,
+		&stockProductRet.ProductID,
 		&stockProductRet.Quantity,
 		&stockProductRet.Balance,
 	)

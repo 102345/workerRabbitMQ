@@ -16,10 +16,9 @@ func New(repository domain.IQueueProcessRepository) domain.IQueueProcessUseCase 
 	}
 }
 
-func (usecase usecase) Create(message string) (*domain.QueueProcess, error) {
+func (usecase usecase) Create(queue *dto.QueueProcessDTO) (*domain.QueueProcess, error) {
 
-	queueProcessDTO := dto.QueueProcessDTO{}
-	queueProcess, err := usecase.repository.Create(&queueProcessDTO)
+	queueProcess, err := usecase.repository.Create(queue)
 
 	if err != nil {
 		return nil, err

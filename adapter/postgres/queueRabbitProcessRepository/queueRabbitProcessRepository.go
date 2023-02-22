@@ -25,7 +25,7 @@ func (repository repository) Create(queue *dto.QueueProcessDTO) (*domain.QueuePr
 	queueRet := domain.QueueProcess{}
 	err := repository.db.QueryRow(
 		ctx,
-		"INSERT INTO QueueProcess (message,result) VALUES ($1, $2) returning *",
+		"INSERT INTO queue_message_process (message,result) VALUES ($1, $2) returning *",
 		queue.Message,
 		queue.Result,
 	).Scan(

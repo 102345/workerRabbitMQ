@@ -1,21 +1,40 @@
 package application
 
 import (
-	"log"
-
+	"github.com/marc/workerRabbitMQ-example/core/domain"
+	"github.com/marc/workerRabbitMQ-example/core/dto"
 	"github.com/marc/workerRabbitMQ-example/validators"
 )
 
-func ProcessQueueStockProductApp() {
+func ProcessQueueStockProductApp(queueRabbitProcessUseCase domain.IQueueProcessUseCase, stockProductUseCase domain.IStockProductUseCase) {
 
-	messageTest := "000000001:000000001:000000001:N"
+	messageTest := "000000002:000000001:000000001:N"
 
-	validate, _ := validators.ValidateMessageStockProduct(messageTest)
-	log.Printf("Message Test: %s", validate)
+	registerQueueStockProduct(messageTest, queueRabbitProcessUseCase, stockProductUseCase)
 
 	messageTest2 := "000001:000000001:000000001:N"
 
-	validate2, _ := validators.ValidateMessageStockProduct(messageTest2)
-	log.Printf("Message Test2: %s", validate2)
+	registerQueueStockProduct(messageTest2, queueRabbitProcessUseCase, stockProductUseCase)
+
+}
+
+func registerQueueStockProduct(message string, queueRabbitProcessUseCase domain.IQueueProcessUseCase, stockProductUseCase domain.IStockProductUseCase) {
+
+	messageValidate, stockProductDTO := validators.ValidateMessageStockProduct(message)
+	queueProcesstDTO := dto.QueueProcessDTO{}
+	if messageValidate == "" {
+		stockProductUseCase.Create(&stockProductDTO)
+
+		queueProcesstDTO.Message = message
+		queueProcesstDTO.Result = "T"
+		queueRabbitProcessUseCase.Create(&queueProcesstDTO)
+
+	} else {
+
+		queueProcesstDTO.Message = messageValidate
+		queueProcesstDTO.Result = "F"
+		queueRabbitProcessUseCase.Create(&queueProcesstDTO)
+
+	}
 
 }
