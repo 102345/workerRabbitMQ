@@ -117,7 +117,7 @@ func registerQueueStockProduct(message string, queueRabbitProcessUseCase domain.
 		queueProcesstDTO.Result = "T"
 		queueRabbitProcessUseCase.Create(&queueProcesstDTO)
 
-		log.Println("Queue processed with success: QueueMessage: %v - Messsage: %v createdAt: %d", message, messageValidate, dateHourLocal)
+		log.Printf("Queue processed with success: QueueMessage: %v - Messsage: %v createdAt: %d", message, messageValidate, dateHourLocal)
 
 	} else {
 
@@ -125,7 +125,7 @@ func registerQueueStockProduct(message string, queueRabbitProcessUseCase domain.
 		queueProcesstDTO.Message = messageValidate
 		queueProcesstDTO.Result = "F"
 		queueRabbitProcessUseCase.Create(&queueProcesstDTO)
-		log.Println("Queue processed with fail: QueueMessage: %v - Message: %v createdAt: %d", message, messageValidate, dateHourLocal)
+		log.Printf("Queue processed with fail: QueueMessage: %v - Message: %v createdAt: %d", message, messageValidate, dateHourLocal)
 
 	}
 
