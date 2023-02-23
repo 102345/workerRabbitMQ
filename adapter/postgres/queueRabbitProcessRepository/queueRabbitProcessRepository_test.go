@@ -14,7 +14,7 @@ import (
 )
 
 func setupCreate() ([]string, dto.QueueProcessDTO, domain.QueueProcess, pgxmock.PgxPoolIface) {
-	cols := []string{"id", "message", "result", "created_at"}
+	cols := []string{"id", "queuemessage", "message", "result", "created_at"}
 	fakeQueueProcessDTO := dto.QueueProcessDTO{}
 	fakeQueueProcess := domain.QueueProcess{}
 	faker.FakeData(&fakeQueueProcessDTO)
@@ -29,11 +29,13 @@ func TestCreate(t *testing.T) {
 	cols, fakeQueueProcessDTO, fakeQueueProcess, mock := setupCreate()
 	defer mock.Close()
 
-	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO queue_message_process (message,result) VALUES ($1, $2) returning *")).WithArgs(
+	mock.ExpectQuery(regexp.QuoteMeta("INSERT INTO queue_message_process (queuemessage,message,result) VALUES ($1, $2, $3) returning *")).WithArgs(
+		fakeQueueProcessDTO.QueueMessage,
 		fakeQueueProcessDTO.Message,
 		fakeQueueProcessDTO.Result,
 	).WillReturnRows(pgxmock.NewRows(cols).AddRow(
 		fakeQueueProcess.ID,
+		fakeQueueProcess.QueueMessage,
 		fakeQueueProcess.Message,
 		fakeQueueProcess.Result,
 		fakeQueueProcess.CreatedAt,
@@ -58,7 +60,8 @@ func TestCreate_DBError(t *testing.T) {
 	fakeQueueProcessDTO.Result = "T"
 	defer mock.Close()
 
-	mock.ExpectQuery("INSERT INTO queue_message_process (message,result) VALUES ($1, $2)").WithArgs(
+	mock.ExpectQuery("INSERT INTO queue_message_process (queuemessage,message,result) VALUES ($1, $2, $3)").WithArgs(
+		fakeQueueProcessDTO.QueueMessage,
 		fakeQueueProcessDTO.Message,
 		fakeQueueProcessDTO.Result,
 	).WillReturnError(fmt.Errorf("ANY DATABASE ERROR"))

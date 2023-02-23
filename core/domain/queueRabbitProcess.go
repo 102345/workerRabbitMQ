@@ -7,10 +7,11 @@ import (
 )
 
 type QueueProcess struct {
-	ID        int32
-	Message   string
-	Result    string
-	CreatedAt time.Time
+	ID           int32
+	QueueMessage string
+	Message      string
+	Result       string
+	CreatedAt    time.Time
 }
 
 type IQueueProcessUseCase interface {

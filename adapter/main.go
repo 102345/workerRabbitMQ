@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 
 	"github.com/marc/workerRabbitMQ-example/adapter/postgres"
 	"github.com/marc/workerRabbitMQ-example/application"
@@ -24,6 +25,7 @@ func main() {
 	defer conn.Close()
 	queueRabbitProcessUseCase := di.ConfigQueueProcessDI(conn)
 	stockProductUseCase := di.ConfigStockProductDI(conn)
+	log.Printf("The StockProduct processing queue worker running...")
 	application.ProcessQueueStockProductApp(queueRabbitProcessUseCase, stockProductUseCase)
 
 }
