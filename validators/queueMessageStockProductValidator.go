@@ -1,11 +1,9 @@
 package validators
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
-	valid "github.com/asaskevich/govalidator"
 	"github.com/marc/workerRabbitMQ-example/core/domain"
 	"github.com/marc/workerRabbitMQ-example/core/dto"
 )
@@ -21,7 +19,8 @@ const (
 
 func ValidateMessageStockProduct(message string, productUseCase domain.IProductUseCase) (string, dto.StockProductDTO) {
 
-	messageRet := ""
+	var messageRet string
+	var stockProductDTO dto.StockProductDTO
 
 	if len(message) != MaximumMessageSize {
 		messageRet = MessageMaximumMessageSizeInvalid
@@ -30,47 +29,43 @@ func ValidateMessageStockProduct(message string, productUseCase domain.IProductU
 
 	if strings.ContainsAny(message, "abcdefghijklmoqrstuvxzABCDEFGHIJKLMOQRTUVXZ") {
 		messageRet = MessageBitLetterInvalid
-		return messageRet, dto.StockProductDTO{}
+		return messageRet, stockProductDTO
 	}
 
 	fields := strings.SplitN(message, ":", -1)
-	cont := 0
-	stockProductDTO := dto.StockProductDTO{}
 
-	for _, field := range fields {
-		fmt.Println(field)
-		if cont <= 2 {
-			check := valid.IsFloat(field)
-			if !check {
-				messageRet = MessageFieldNotNumeric
-				return messageRet, dto.StockProductDTO{}
-			}
-		}
-		if cont == 0 {
-			productId, _ := strconv.ParseInt(field, 10, 32)
-			stockProductDTO.ProductID = int32(productId)
-
-			product, _ := productUseCase.FindById(productId)
-
-			if product.ID == 0 {
-				messageRet = MessageCodeProductInvalid
-				return messageRet, dto.StockProductDTO{}
-			}
-
-		} else if cont == 1 {
-			quantity, _ := strconv.ParseInt(field, 10, 32)
-			stockProductDTO.Quantity = int32(quantity)
-		} else if cont == 2 {
-			balance, _ := strconv.ParseInt(field, 10, 32)
-			stockProductDTO.Balance = int32(balance)
-		} else {
-			if field == "N" {
-				stockProductDTO.Balance = stockProductDTO.Balance * (-1)
-			}
-		}
-		cont++
+	productID, err := strconv.ParseInt(fields[0], 10, 32)
+	if err != nil {
+		return MessageFieldNotNumeric, stockProductDTO
 	}
 
-	return "", stockProductDTO
+	product, err := productUseCase.FindById(productID)
+	if err != nil {
+		return MessageCodeProductInvalid, stockProductDTO
+	}
+
+	if product.ID == 0 {
+		return MessageCodeProductInvalid, stockProductDTO
+	}
+
+	quantity, err := strconv.Atoi(fields[1])
+	if err != nil {
+		return MessageFieldNotNumeric, stockProductDTO
+	}
+
+	balance, err := strconv.Atoi(fields[2])
+	if err != nil {
+		return MessageFieldNotNumeric, stockProductDTO
+	}
+
+	if len(fields) > 3 && strings.ToUpper(fields[3]) == "N" {
+		balance = -balance
+	}
+
+	stockProductDTO.ProductID = int32(productID)
+	stockProductDTO.Quantity = int32(quantity)
+	stockProductDTO.Balance = int32(balance)
+
+	return messageRet, stockProductDTO
 
 }
