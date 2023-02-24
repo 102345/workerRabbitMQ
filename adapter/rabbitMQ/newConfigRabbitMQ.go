@@ -25,6 +25,7 @@ func (app *RabbitMQApp) PublishMessage(conn *amqp.Connection, channel *amqp.Chan
 	app.configRabbitMQService.PublishMessage(conn, channel, queue, message)
 }
 
-func (app *RabbitMQApp) ReadQueueMessage(conn *amqp.Connection, channel *amqp.Channel, queue amqp.Queue, queueRabbitProcessUseCase domain.IQueueProcessUseCase, stockProductUseCase domain.IStockProductUseCase) {
-	app.configRabbitMQService.ReadQueueMessage(conn, channel, queue, queueRabbitProcessUseCase, stockProductUseCase)
+func (app *RabbitMQApp) ReadQueueMessage(conn *amqp.Connection, channel *amqp.Channel, queue amqp.Queue, queueRabbitProcessUseCase domain.IQueueProcessUseCase,
+	stockProductUseCase domain.IStockProductUseCase, productUseCase domain.IProductUseCase) {
+	app.configRabbitMQService.ReadQueueMessage(conn, channel, queue, queueRabbitProcessUseCase, stockProductUseCase, productUseCase)
 }

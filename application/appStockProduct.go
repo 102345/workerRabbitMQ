@@ -7,7 +7,8 @@ import (
 	"github.com/marc/workerRabbitMQ-example/core/domain"
 )
 
-func ProcessQueueStockProductApp(queueRabbitProcessUseCase domain.IQueueProcessUseCase, stockProductUseCase domain.IStockProductUseCase) {
+func ProcessQueueStockProductApp(queueRabbitProcessUseCase domain.IQueueProcessUseCase,
+	stockProductUseCase domain.IStockProductUseCase, productUseCase domain.IProductUseCase) {
 
 	//productid:quantitity:balance:signalbalance
 	//messageTest := "000000002:000000001:000000001:N"
@@ -20,6 +21,6 @@ func ProcessQueueStockProductApp(queueRabbitProcessUseCase domain.IQueueProcessU
 		return
 	}
 
-	configRabbitMQServiceApp.ReadQueueMessage(conn, channel, queue, queueRabbitProcessUseCase, stockProductUseCase)
+	configRabbitMQServiceApp.ReadQueueMessage(conn, channel, queue, queueRabbitProcessUseCase, stockProductUseCase, productUseCase)
 
 }

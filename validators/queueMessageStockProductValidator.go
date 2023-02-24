@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	valid "github.com/asaskevich/govalidator"
+	"github.com/marc/workerRabbitMQ-example/core/domain"
 	"github.com/marc/workerRabbitMQ-example/core/dto"
 )
 
@@ -14,10 +15,11 @@ const (
 	MessageMaximumMessageSizeInvalid = "Message size of one of the invalid bits"
 	MessageBitLetterInvalid          = "Message contains one of the bits with letter(s)"
 	MessageFieldNotNumeric           = "Message contains one of the non-numeric fields"
+	MessageCodeProductInvalid        = "Message contains invalid product code"
 	MaximumMessageSize               = 31
 )
 
-func ValidateMessageStockProduct(message string) (string, dto.StockProductDTO) {
+func ValidateMessageStockProduct(message string, productUseCase domain.IProductUseCase) (string, dto.StockProductDTO) {
 
 	messageRet := ""
 
@@ -47,6 +49,14 @@ func ValidateMessageStockProduct(message string) (string, dto.StockProductDTO) {
 		if cont == 0 {
 			productId, _ := strconv.ParseInt(field, 10, 32)
 			stockProductDTO.ProductID = int32(productId)
+
+			product, _ := productUseCase.FindById(productId)
+
+			if product.ID == 0 {
+				messageRet = MessageCodeProductInvalid
+				return messageRet, dto.StockProductDTO{}
+			}
+
 		} else if cont == 1 {
 			quantity, _ := strconv.ParseInt(field, 10, 32)
 			stockProductDTO.Quantity = int32(quantity)

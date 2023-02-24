@@ -1,6 +1,7 @@
 package rabbitMQService
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -14,7 +15,8 @@ import (
 type IConfigRabbitMQService interface {
 	ConfigRabbitMQ(queue string) (*amqp.Connection, *amqp.Channel, amqp.Queue, error)
 	PublishMessage(conn *amqp.Connection, channel *amqp.Channel, queue amqp.Queue, message string)
-	ReadQueueMessage(conn *amqp.Connection, channel *amqp.Channel, queue amqp.Queue, queueRabbitProcessUseCase domain.IQueueProcessUseCase, stockProductUseCase domain.IStockProductUseCase)
+	ReadQueueMessage(conn *amqp.Connection, channel *amqp.Channel, queue amqp.Queue, queueRabbitProcessUseCase domain.IQueueProcessUseCase,
+		stockProductUseCase domain.IStockProductUseCase, productUseCase domain.IProductUseCase)
 }
 
 type ConfigRabbitMQService struct{}
@@ -60,7 +62,7 @@ func (config *ConfigRabbitMQService) PublishMessage(conn *amqp.Connection, chann
 
 	msg := amqp.Publishing{
 		Headers:         map[string]interface{}{},
-		ContentType:     "",
+		ContentType:     "text/plain",
 		ContentEncoding: "",
 		DeliveryMode:    2,
 		Priority:        0,
@@ -79,10 +81,12 @@ func (config *ConfigRabbitMQService) PublishMessage(conn *amqp.Connection, chann
 
 }
 
-func (config *ConfigRabbitMQService) ReadQueueMessage(conn *amqp.Connection, channel *amqp.Channel, queue amqp.Queue, queueRabbitProcessUseCase domain.IQueueProcessUseCase, stockProductUseCase domain.IStockProductUseCase) {
+func (config *ConfigRabbitMQService) ReadQueueMessage(conn *amqp.Connection, channel *amqp.Channel,
+	queue amqp.Queue, queueRabbitProcessUseCase domain.IQueueProcessUseCase,
+	stockProductUseCase domain.IStockProductUseCase, productUseCase domain.IProductUseCase) {
 
 	for {
-		messages, _ := channel.Consume(
+		messages, err := channel.Consume(
 			queue.Name,
 			"",
 			true,
@@ -91,24 +95,25 @@ func (config *ConfigRabbitMQService) ReadQueueMessage(conn *amqp.Connection, cha
 			false,
 			nil,
 		)
+		if err != nil {
+			fmt.Errorf("failed to register a consumer: %w", err.Error())
+		}
 
 		for m := range messages {
 			message := string(m.Body)
-			registerQueueStockProduct(message, queueRabbitProcessUseCase, stockProductUseCase)
+			process(message, queueRabbitProcessUseCase, stockProductUseCase, productUseCase)
 		}
 		conn.Close()
 	}
 
 }
 
-func registerQueueStockProduct(message string, queueRabbitProcessUseCase domain.IQueueProcessUseCase,
-	stockProductUseCase domain.IStockProductUseCase) {
+func process(message string, queueRabbitProcessUseCase domain.IQueueProcessUseCase,
+	stockProductUseCase domain.IStockProductUseCase, productUseCase domain.IProductUseCase) {
 
-	messageValidate, stockProductDTO := validators.ValidateMessageStockProduct(message)
+	messageValidate, stockProductDTO := validators.ValidateMessageStockProduct(message, productUseCase)
 	queueProcesstDTO := dto.QueueProcessDTO{}
 
-	now := time.Now()
-	dateHourLocal := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), now.Second(), now.Nanosecond(), now.Location())
 	if messageValidate == "" {
 		stockProductUseCase.Create(&stockProductDTO)
 
@@ -117,7 +122,7 @@ func registerQueueStockProduct(message string, queueRabbitProcessUseCase domain.
 		queueProcesstDTO.Result = "T"
 		queueRabbitProcessUseCase.Create(&queueProcesstDTO)
 
-		log.Printf("Queue processed with success: QueueMessage: %v - Messsage: %v createdAt: %d", message, messageValidate, dateHourLocal)
+		log.Printf("Queue processed with success: QueueMessage: %v - Messsage: %v createdAt: %s", message, messageValidate, time.Now().Format("2006-01-02 15:04:05"))
 
 	} else {
 
@@ -125,7 +130,7 @@ func registerQueueStockProduct(message string, queueRabbitProcessUseCase domain.
 		queueProcesstDTO.Message = messageValidate
 		queueProcesstDTO.Result = "F"
 		queueRabbitProcessUseCase.Create(&queueProcesstDTO)
-		log.Printf("Queue processed with fail: QueueMessage: %v - Message: %v createdAt: %d", message, messageValidate, dateHourLocal)
+		log.Printf("Queue processed with fail: QueueMessage: %v - Message: %v createdAt: %s", message, messageValidate, time.Now().Format("2006-01-02 15:04:05"))
 
 	}
 
