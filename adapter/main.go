@@ -27,6 +27,7 @@ func main() {
 	stockProductUseCase := di.ConfigStockProductDI(conn)
 	productUseCase := di.ConfigProductDI(conn)
 	log.Printf("The StockProduct processing queue worker running...")
-	application.ProcessQueueStockProductApp(queueRabbitProcessUseCase, stockProductUseCase, productUseCase)
+	p := application.NewStockProductQueueProcessor(queueRabbitProcessUseCase, stockProductUseCase, productUseCase)
+	application.ProcessQueueStockProductApp(p)
 
 }
