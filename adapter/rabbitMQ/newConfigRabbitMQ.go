@@ -26,6 +26,6 @@ func (app *RabbitMQApp) PublishMessage(conn *amqp.Connection, channel *amqp.Chan
 }
 
 func (app *RabbitMQApp) ReadQueueMessage(conn *amqp.Connection, channel *amqp.Channel, queue amqp.Queue, queueRabbitProcessUseCase domain.IQueueProcessUseCase,
-	stockProductUseCase domain.IStockProductUseCase, productUseCase domain.IProductUseCase) {
-	app.configRabbitMQService.ReadQueueMessage(conn, channel, queue, queueRabbitProcessUseCase, stockProductUseCase, productUseCase)
+	stockProductUseCase domain.IStockProductUseCase, productUseCase domain.IProductUseCase) error {
+	return app.configRabbitMQService.ReadQueueMessage(conn, channel, queue, queueRabbitProcessUseCase, stockProductUseCase, productUseCase)
 }
