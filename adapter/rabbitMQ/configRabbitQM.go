@@ -22,99 +22,33 @@ const (
 )
 
 type IConfigRabbitMQService interface {
-	ConfigRabbitMQ(queue string) (*amqp.Connection, *amqp.Channel, amqp.Queue, error)
-	PublishMessage(conn *amqp.Connection, channel *amqp.Channel, queue amqp.Queue, message string)
-	ReadQueueMessage(conn *amqp.Connection, channel *amqp.Channel, queue amqp.Queue, queueRabbitProcessUseCase domain.IQueueProcessUseCase,
+	ConnectChannelRabbitMQ(queue string) (*amqp.Connection, *amqp.Channel, error)
+	ReadQueueMessage(conn *amqp.Connection, channel *amqp.Channel, queue string, queueRabbitProcessUseCase domain.IQueueProcessUseCase,
 		stockProductUseCase domain.IStockProductUseCase, productUseCase domain.IProductUseCase) error
 }
 
 type ConfigRabbitMQService struct{}
 
-func (config *ConfigRabbitMQService) ConfigRabbitMQ(queue string) (*amqp.Connection, *amqp.Channel, amqp.Queue, error) {
+func (config *ConfigRabbitMQService) ConnectChannelRabbitMQ(queue string) (*amqp.Connection, *amqp.Channel, error) {
 
 	connectionAMQPURL := viper.GetString("rabbitMQ.connectionAMQP")
 	conn, err := amqp.Dial(connectionAMQPURL)
 	if err != nil {
 		log.Printf("Error Connection RabbitMQ: %s", err.Error())
-		return nil, nil, amqp.Queue{}, err
+		return nil, nil, err
 	}
 	ch, err := conn.Channel()
 	if err != nil {
 		log.Printf("Error Channel RabbitMQ: %s", err.Error())
-		return nil, nil, amqp.Queue{}, err
+		return nil, nil, err
 	}
 
-	err = ch.ExchangeDeclare("DeadLetterExchangeStockProduct", "fanout", true, false, false, false, nil)
-	if err != nil {
-		log.Printf("Error Exchange Declare RabbitMQ: %s", err.Error())
-		return nil, nil, amqp.Queue{}, err
-	}
-
-	_, err = ch.QueueDeclare("DeadLetterQueueStockProduct", true, false, false, false, nil)
-	if err != nil {
-		log.Printf("Error Queue Dead Letter StockProduct Declare RabbitMQ: %s", err.Error())
-		return nil, nil, amqp.Queue{}, err
-	}
-
-	err = ch.QueueBind("DeadLetterQueueStockProduct", "DeadLetterKeyStockProduct",
-		"DeadLetterExchangeStockProduct", false, nil)
-	if err != nil {
-		log.Printf("Error Queue Bind Dead Letter StockProduct Declare RabbitMQ: %s", err.Error())
-		return nil, nil, amqp.Queue{}, err
-	}
-	args := make(amqp.Table)
-
-	args["x-dead-letter-exchange"] = "DeadLetterExchangeStockProduct"
-	args["x-dead-letter-routing-key"] = "DeadLetterKeyStockProduct"
-
-	q, err := ch.QueueDeclare(
-		queue, //name string,
-		true,  // durable bool,
-		false, // autodelete
-		false, // exclusive
-		false, // nowait
-		args)  // args
-	if err != nil {
-		log.Printf("Error Queue Declare RabbitMQ: %s", err.Error())
-		return nil, nil, amqp.Queue{}, err
-	}
-
-	ch.QueueBind(
-		q.Name,       //name string,
-		"",           //key string,
-		"amq.fanout", //exchange string
-		false,        //noWait bool,
-		nil)          //args amqp.Table
-
-	return conn, ch, q, nil
-
-}
-
-func (config *ConfigRabbitMQService) PublishMessage(conn *amqp.Connection, channel *amqp.Channel, queue amqp.Queue, message string) {
-
-	msg := amqp.Publishing{
-		Headers:         map[string]interface{}{},
-		ContentType:     "text/plain",
-		ContentEncoding: "",
-		DeliveryMode:    2,
-		Priority:        0,
-		CorrelationId:   "",
-		ReplyTo:         "",
-		Expiration:      "",
-		MessageId:       "messageStockProduct",
-		Timestamp:       time.Time{},
-		Type:            "",
-		UserId:          "",
-		AppId:           "go-clean-example",
-		Body:            []byte(message),
-	}
-	channel.Publish("", queue.Name, false, false, msg)
-	conn.Close()
+	return conn, ch, nil
 
 }
 
 func (config *ConfigRabbitMQService) ReadQueueMessage(conn *amqp.Connection, channel *amqp.Channel,
-	queue amqp.Queue, queueRabbitProcessUseCase domain.IQueueProcessUseCase,
+	queue string, queueRabbitProcessUseCase domain.IQueueProcessUseCase,
 	stockProductUseCase domain.IStockProductUseCase, productUseCase domain.IProductUseCase) error {
 
 	var errRetryFail error
@@ -126,7 +60,7 @@ func (config *ConfigRabbitMQService) ReadQueueMessage(conn *amqp.Connection, cha
 			func() error {
 
 				messages, err := channel.Consume(
-					queue.Name,
+					queue,
 					"",
 					autoAck,
 					false,

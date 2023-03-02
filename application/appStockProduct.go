@@ -24,13 +24,13 @@ func ProcessQueueStockProductApp(p *StockProductQueueProcessor) {
 	//messageTest := "000000002:000000001:000000001:N"
 
 	configRabbitMQServiceApp := rabbitMQService.NewRabbitMQApp(&rabbitMQService.ConfigRabbitMQService{})
-	conn, channel, queue, err := configRabbitMQServiceApp.ConfigRabbitMQ("queueStockProduct")
+	conn, channel, err := configRabbitMQServiceApp.ConnectChannelRabbitMQ("queueStockProduct")
 
 	if err != nil {
 		log.Println("Error ConfigRAbbitMQ: %s ", err.Error())
 		return
 	}
 
-	configRabbitMQServiceApp.ReadQueueMessage(conn, channel, queue, p.queueRabbitProcessUseCase, p.stockProductUseCase, p.productUseCase)
+	configRabbitMQServiceApp.ReadQueueMessage(conn, channel, "queueStockProduct", p.queueRabbitProcessUseCase, p.stockProductUseCase, p.productUseCase)
 
 }
