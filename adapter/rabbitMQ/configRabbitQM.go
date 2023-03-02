@@ -1,7 +1,6 @@
 package rabbitMQService
 
 import (
-	"fmt"
 	"log"
 	"time"
 
@@ -14,11 +13,9 @@ import (
 )
 
 const (
-	MaxRetriesPublishMessage        = 3
-	RetryDelayPublishMessage        = 1 * time.Second
-	MaxRetriesDataBase              = 3
-	RetryDelayDataBase              = 1 * time.Second
-	DeliveryTag              uint64 = 1
+	MaxRetriesDataBase        = 3
+	RetryDelayDataBase        = 1 * time.Second
+	DeliveryTag        uint64 = 1
 )
 
 type IConfigRabbitMQService interface {
@@ -51,62 +48,54 @@ func (config *ConfigRabbitMQService) ReadQueueMessage(conn *amqp.Connection, cha
 	queue string, queueRabbitProcessUseCase domain.IQueueProcessUseCase,
 	stockProductUseCase domain.IStockProductUseCase, productUseCase domain.IProductUseCase) error {
 
-	var errRetryFail error
 	var errRetryFailDB error
 	var autoAck bool = false
 
+	//Força o balanceamento de workload para as instancias de consumidor
+	//prefetchcount - numeros de mensagens processadas por cada instancia de consumidor
+	//global - true : por channel , false : por consumer
+	channel.Qos(10, 0, false)
+
 	for {
-		errRetryFail = retry.Do(
-			func() error {
 
-				messages, err := channel.Consume(
-					queue,
-					"",
-					autoAck,
-					false,
-					false,
-					false,
-					nil,
-				)
-				if err != nil {
-					fmt.Errorf("failed to register a consumer: %w", err)
-					return err
-				}
+		messages, err := channel.Consume(
+			queue,
+			"",
+			autoAck,
+			false,
+			false,
+			false,
+			nil,
+		)
+		if err != nil {
+			log.Printf("Failed to register a consumer")
+			return err
+		}
 
-				for m := range messages {
-					message := string(m.Body)
-					errRetryFailDB = retry.Do(
-						func() error {
+		for m := range messages {
+			message := string(m.Body)
+			errRetryFailDB = retry.Do(
+				func() error {
 
-							err := process(message, queueRabbitProcessUseCase, stockProductUseCase, productUseCase)
-							if err != nil {
-								return err
-							}
-
-							return nil
-
-						}, retry.Attempts(MaxRetriesDataBase), retry.Delay(RetryDelayDataBase),
-					)
-
-					if errRetryFailDB != nil {
-						channel.Nack(DeliveryTag, false, false)
-						log.Printf("Database connection problems")
-						continue
+					err := process(message, queueRabbitProcessUseCase, stockProductUseCase, productUseCase)
+					if err != nil {
+						return err
 					}
 
-				}
-				conn.Close()
+					return nil
 
-				channel.Ack(DeliveryTag, false)
+				}, retry.Attempts(MaxRetriesDataBase), retry.Delay(RetryDelayDataBase),
+			)
 
-				return nil
-			}, retry.Attempts(MaxRetriesPublishMessage), retry.Delay(RetryDelayPublishMessage),
-		)
+			if errRetryFailDB != nil {
+				channel.Nack(DeliveryTag, false, false)
+				log.Printf("Database connection problems")
+				continue
+			}
 
-		if errRetryFail != nil {
-			log.Printf("Exceeded number of message consuming attempts")
-			return errRetryFail
 		}
+		conn.Close()
+		channel.Ack(DeliveryTag, false)
 
 	}
 
@@ -119,6 +108,7 @@ func process(message string, queueRabbitProcessUseCase domain.IQueueProcessUseCa
 	queueProcesstDTO := dto.QueueProcessDTO{}
 
 	if messageValidate == "" {
+
 		_, err := stockProductUseCase.Create(&stockProductDTO)
 		if err != nil {
 			return err
